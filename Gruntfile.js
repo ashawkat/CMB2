@@ -8,12 +8,10 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON( 'package.json' ),
 
 		phpunit: {
-			classes: {}
-		},
-
-		githooks: {
-			all: {
-				'pre-commit': 'tests'
+			classes: {},
+			options: {
+				bin: 'vendor/bin/phpunit',
+				excludeGroup: 'cmb2-ajax-embed',
 			}
 		},
 
@@ -36,8 +34,8 @@ module.exports = function(grunt) {
 					},
 					processPot: function( pot, options ) {
 						pot.headers['report-msgid-bugs-to'] = 'http://wordpress.org/support/plugin/cmb2';
-						pot.headers['last-translator'] = 'WebDevStudios contact@webdevstudios.com';
-						pot.headers['language-team'] = 'WebDevStudios contact@webdevstudios.com';
+						pot.headers['last-translator'] = 'CMB2 Team hello@cmb2.io';
+						pot.headers['language-team'] = 'CMB2 Team hello@cmb2.io';
 						var today = new Date();
 						pot.headers['po-revision-date'] = today.getFullYear() +'-'+ ( today.getMonth() + 1 ) +'-'+ today.getDate() +' '+ today.getUTCHours() +':'+ today.getUTCMinutes() +'+'+ today.getTimezoneOffset();
 						return pot;
@@ -61,6 +59,41 @@ module.exports = function(grunt) {
 				}]
 			}
 		},
+
+		checktextdomain: {
+			options: {
+				text_domain: 'cmb2',
+				create_report_file: true,
+				keywords: [
+					'__:1,2d',
+					'_e:1,2d',
+					'_x:1,2c,3d',
+					'esc_html__:1,2d',
+					'esc_html_e:1,2d',
+					'esc_html_x:1,2c,3d',
+					'esc_attr__:1,2d',
+					'esc_attr_e:1,2d',
+					'esc_attr_x:1,2c,3d',
+					'_ex:1,2c,3d',
+					'_n:1,2,4d',
+					'_nx:1,2,4c,5d',
+					'_n_noop:1,2,3d',
+					'_nx_noop:1,2,3c,4d',
+					' __ngettext:1,2,3d',
+					'__ngettext_noop:1,2,3d',
+					'_c:1,2d',
+					'_nc:1,2,4c,5d'
+				]
+			},
+			files: {
+				src: [
+					'**/*.php', // Include all files
+					'!node_modules/**', // Exclude node_modules/
+					],
+				expand: true
+			}
+		},
+
 		// concat: {
 		// 	options: {
 		// 		stripBanners: true,
@@ -82,7 +115,7 @@ module.exports = function(grunt) {
 				files: [{
 					expand: false,
 					cwd: 'css/',
-					src: ['css/cmb2.css'],
+					src: ['css/cmb2.css','css/cmb2-display.css'],
 					dest: 'css/',
 				}]
 			}
@@ -96,23 +129,44 @@ module.exports = function(grunt) {
 				},
 				files: {
 				  'css/cmb2.css': 'css/sass/cmb2.scss',
+				  'css/cmb2-front.css': 'css/sass/cmb2-front.scss',
+				  'css/cmb2-display.css': 'css/sass/cmb2-display.scss'
 				}
 			}
 		},
 
-		cmq: {
-			options: {
-				log: false
-			},
-			dist: {
+		usebanner: {
+			taskName: {
+				options: {
+					position: 'top',
+					banner: '/*!\n' +
+						' * <%= pkg.title %> - v<%= pkg.version %> - <%= grunt.template.today("yyyy-mm-dd") %>\n' +
+						' * <%= pkg.homepage %>\n' +
+						' * Copyright (c) <%= grunt.template.today("yyyy") %>\n' +
+						' * Licensed GPLv2+\n' +
+						' */\n',
+					linebreak: true
+				},
 				files: {
-					'css/cmb2.css': 'css/cmb2.css'
+					src: [
+						'css/cmb2.css',
+						'css/cmb2-front.css',
+						'css/cmb2-display.css',
+						'css/cmb2-rtl.css',
+						'css/cmb2-front-rtl.css',
+						'css/cmb2-display-rtl.css'
+					],
 				}
 			}
 		},
 
 		cssmin: {
 			options: {
+				banner: '/*! <%= pkg.title %> - v<%= pkg.version %> - <%= grunt.template.today("yyyy-mm-dd") %>' +
+					' | <%= pkg.homepage %>' +
+					' | Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>' +
+					' | Licensed <%= pkg.license %>' +
+					' */'
 				// banner: '/*! <%= pkg.title %> - v<%= pkg.version %> - <%= grunt.template.today("yyyy-mm-dd") %>\n' +
 				// 	' * <%= pkg.homepage %>\n' +
 				// 	' * Copyright (c) <%= grunt.template.today("yyyy") %>;' +
@@ -121,7 +175,14 @@ module.exports = function(grunt) {
 			},
 			minify: {
 				expand: true,
-				src: ['css/cmb2.css'],
+				src: [
+					'css/cmb2.css',
+					'css/cmb2-front.css',
+					'css/cmb2-display.css',
+					'css/cmb2-rtl.css',
+					'css/cmb2-front-rtl.css',
+					'css/cmb2-display-rtl.css'
+				],
 				// dest: '',
 				ext: '.min.css'
 			}
@@ -129,7 +190,9 @@ module.exports = function(grunt) {
 
 		jshint: {
 			all: [
-				'js/cmb2.js'
+				'js/cmb2.js',
+				'js/cmb2-wysiwyg.js',
+				'js/cmb2-char-counter.js'
 			],
 			options: {
 				curly   : true,
@@ -147,15 +210,15 @@ module.exports = function(grunt) {
 					exports : true,
 					module  : false
 				},
-				predef  :['document','window','jQuery','cmb2_l10','wp','tinyMCEPreInit','tinyMCE','console','postboxes','pagenow']
+				predef  :['document','window','jQuery','cmb2_l10','wp','tinyMCEPreInit','tinyMCE','console','postboxes','pagenow', 'QTags', 'quicktags', '_']
 			}
 		},
 
 		asciify: {
 			banner: {
-				text    : 'CMB!',
+				text    : 'CMB2',
 				options : {
-					font : 'isometric2',
+					font : 'univers',
 					log  : true
 				}
 			}
@@ -164,7 +227,7 @@ module.exports = function(grunt) {
 		uglify: {
 			all: {
 				files: {
-					'js/cmb2.min.js': ['js/cmb2.js']
+					'js/cmb2.min.js': ['js/cmb2.js', 'js/cmb2-wysiwyg.js', 'js/cmb2-char-counter.js']
 				},
 				options: {
 					// banner: '/*! <%= pkg.title %> - v<%= pkg.version %> - <%= grunt.template.today("yyyy-mm-dd") %>\n' +
@@ -180,7 +243,7 @@ module.exports = function(grunt) {
 		watch: {
 
 			css: {
-				files: ['css/sass/partials/*.scss'],
+				files: ['css/sass/**/*.scss'],
 				tasks: ['styles'],
 				options: {
 					spawn: false,
@@ -188,7 +251,7 @@ module.exports = function(grunt) {
 			},
 
 			scripts: {
-				files: ['js/cmb2.js'],
+				files: ['js/cmb2.js', 'js/cmb2-wysiwyg.js', 'js/cmb2-char-counter.js'],
 				tasks: ['js'],
 				options: {
 					debounceDelay: 500
@@ -202,35 +265,49 @@ module.exports = function(grunt) {
 
 		},
 
-		// make a zipfile
-		compress: {
-			main: {
+		cssjanus: {
+			i18n: {
 				options: {
-					mode: 'zip',
-					archive: 'cmb2.zip'
+					swapLtrRtlInUrl: false
 				},
-				files: [ {
-						expand: true,
-						// cwd: '/',
-						src: [
-							'**',
-							'!node_modules/**',
-							'!css/sass/**',
-							'!**.zip',
-							'!Gruntfile.js',
-							'!package.json',
-							'!phpunit.xml',
-							'!tests/**'
-						],
-						dest: '/'
-				} ]
+				files: [
+					{ src: 'css/cmb2-display.css', dest: 'css/cmb2-display-rtl.css' },
+					{ src: 'css/cmb2-front.css', dest: 'css/cmb2-front-rtl.css' },
+					{ src: 'css/cmb2.css', dest: 'css/cmb2-rtl.css' }
+				]
 			}
-		}
+		},
+
+		exec: {
+			apigen: {
+				cmd: [
+					'rm -r ~/Sites/wpengine/api',
+					'echo "Old API docs removed"',
+					'apigen generate --config apigen/apigen.neon --debug',
+					'echo "Docs regenerated"',
+					'php apigen/hook-docs.php'
+				].join( '&&' )
+			}
+		},
 
 	});
 
-	grunt.registerTask('styles', ['sass', 'csscomb', 'cmq', 'cssmin']);
-	grunt.registerTask('js', ['asciify', 'jshint', 'uglify']);
-	grunt.registerTask('tests', ['asciify', 'jshint', 'phpunit']);
-	grunt.registerTask('default', ['styles', 'js', 'tests']);
+	var asciify = ['asciify'];
+	var styles  = ['sass', 'csscomb', 'cssjanus', 'cssmin', 'usebanner'];
+	var hint    = ['jshint'];
+	var js      = ['jshint', 'uglify'];
+	var tests   = ['jshint', 'phpunit'];
+
+	grunt.registerTask( 'styles', asciify.concat( styles ) );
+	grunt.registerTask( 'css', asciify.concat( styles ) );
+	grunt.registerTask( 'hint', asciify.concat( hint ) );
+	grunt.registerTask( 'js', asciify.concat( js ) );
+	grunt.registerTask( 'tests', asciify.concat( tests ) );
+	grunt.registerTask( 'default', asciify.concat( styles, js, tests ) );
+
+	// apigen
+	grunt.registerTask( 'apigen', asciify.concat( ['exec:apigen'] ) );
+
+	// Checktextdomain and makepot task(s)
+	grunt.registerTask( 'build:i18n', asciify.concat( ['checktextdomain', 'makepot', 'newer:potomo'] ) );
 };
